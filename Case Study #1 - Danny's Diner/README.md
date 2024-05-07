@@ -74,7 +74,8 @@ VALUES
 ```
 
 ## Case Study Questions with Solutions
-1. What is the total amount each customer spent at the restaurant?
+### 1. What is the total amount each customer spent at the restaurant?
+**Answer:**
 ```sql
 SELECT
   customer_id,
@@ -87,20 +88,57 @@ GROUP BY
   customer_id;
 ```
 
-2. How many days has each customer visited the restaurant?
+**Steps:**
+- Use *JOIN* to combine rows from the `sales` table with matching rows from the `menu` table based on `product_id` in order to obtain price information for each sale.
+- Use the *GROUP BY* clause to group the result set by `customer_id`.
+- Within the *SELECT* statement, use the `SUM()` function to aggregate the price column, adding up the prices of all sales transactions for each customer.
 
-3. What was the first item from the menu purchased by each customer?
+**Output:**
+| customer_id | total_spent |
+|-------------|-------------|
+| A | 76 |
+| B | 74 |
+| C | 36 |
 
-4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+Customer A has spent a total of 76 dollars, customer B has spent a total of 74 dollars, and customer C has spent a total of 36 dollars.
 
-5. Which item was the most popular for each customer?
+### 2. How many days has each customer visited the restaurant?
+**Answer:**
+```sql
+SELECT
+    customer_id,
+    COUNT(DISTINCT order_date) AS visits_in_days
+FROM
+    sales
+GROUP BY
+    customer_id;
+```
 
-6. Which item was purchased first by the customer after they became a member?
+**Steps:**
+- Use the *GROUP BY* clause to group the result set by `customer_id`.
+- Within the *SELECT* statement, use the `COUNT()` function to count the unique order dates for each customer.
 
-7. Which item was purchased just before the customer became a member?
+**Output:**
+| customer_id | visits_in_days |
+|-------------|-------------|
+| A | 4 |
+| B | 6 |
+| C | 2 |
 
-8. What is the total items and amount spent for each member before they became a member?
+Customer A has made 4 visits, customer B has made 6 visits, and customer C has made 2 visits.
 
-9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+### 4. What was the first item from the menu purchased by each customer?
 
-10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+### 5. What is the most purchased item on the menu and how many times was it purchased by all customers?
+
+### 6. Which item was the most popular for each customer?
+
+### 7. Which item was purchased first by the customer after they became a member?
+
+### 8. Which item was purchased just before the customer became a member?
+
+### 9. What is the total items and amount spent for each member before they became a member?
+
+### 10. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+
+### 11. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
