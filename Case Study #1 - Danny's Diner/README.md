@@ -5,10 +5,12 @@
 Danny, a lover of Japanese food, opened a restaurant called Danny's Diner in 2021, specializing in sushi, curry, and ramen. However, the restaurant lacks the expertise to leverage its basic operational data effectively. They need assistance in analyzing customer patterns, spending habits, and menu preferences to enhance customer experience and potentially expand their loyalty program. Danny provided sample datasets including `sales`, `menu`, and `members` information for analysis, hoping to derive insights and optimize business decisions.
 
 ### SQL Tools Demonstrated
+*I want to preface by saying that I had not known about CTE's while doing this case study!* :sweat_smile:
 - Joins
 - Aggregate functions
 - Window functions
 - Subqueries
+- Common table expressions
 
 *All information regarding this case study can be found [here](https://8weeksqlchallenge.com/case-study-1/).*
 
@@ -89,9 +91,9 @@ GROUP BY
 ```
 
 **Steps:**
-- Use *JOIN* to combine rows from the `sales` table with matching rows from the `menu` table based on `product_id` in order to obtain price information for each sale.
-- Use the *GROUP BY* clause to group the result set by `customer_id`.
-- Within the *SELECT* statement, use the `SUM()` function to aggregate the price column, adding up the prices of all sales transactions for each customer.
+- Use **JOIN** to combine rows from the `sales` table with matching rows from the `menu` table based on `product_id` in order to obtain price information for each sale.
+- Use the **GROUP BY** clause to group the result set by `customer_id`.
+- Within the **SELECT** statement, use the `SUM()` function to aggregate the price column, adding up the prices of all sales transactions for each customer.
 
 **Output:**
 | customer_id | total_spent |
@@ -115,8 +117,8 @@ GROUP BY
 ```
 
 **Steps:**
-- Use the *GROUP BY* clause to group the result set by `customer_id`.
-- Within the *SELECT* statement, use the `COUNT()` function to count the unique order dates for each customer.
+- Use the **GROUP BY** clause to group the result set by `customer_id`.
+- Within the **SELECT** statement, use the `COUNT()` function to count the unique order dates for each customer.
 
 **Output:**
 | customer_id | visits_in_days |
@@ -127,18 +129,127 @@ GROUP BY
 
 Customer A has made 4 visits, customer B has made 6 visits, and customer C has made 2 visits.
 
-### 4. What was the first item from the menu purchased by each customer?
+### 3. What was the first item from the menu purchased by each customer?
+**Answer:**
+```sql
+SELECT
+    ranked_items.customer_id,
+    menu.product_name
+FROM (
+    SELECT
+        *,
+        RANK() OVER(PARTITION BY customer_id ORDER BY order_date) AS rnk
+    FROM
+        sales
+    ) AS ranked_items
+JOIN
+    menu ON menu.product_id = ranked_items.product_id
+WHERE
+    rnk = 1;
+```
 
-### 5. What is the most purchased item on the menu and how many times was it purchased by all customers?
+**Steps:**
+- Within the **FROM** clause, the subquery uses the window function `RANK()` to order each item each customer ordered by date from the `sales` table.
+- Use **JOIN** to combine rows from the `menu` table onto the subquery (aliased as "ranked_items") based on `product_id`. This will give us the name of the food for each order.
+- Use the **WHERE** clause to filter the results such that we obtain the first ever order for each customer.
 
-### 6. Which item was the most popular for each customer?
+**Output:**
+| customer_id | product_name |
+|-------------|-------------|
+| A | sushi |
+| A | curry |
+| B | curry |
+| C | ramen |
+| C | ramen |
 
-### 7. Which item was purchased first by the customer after they became a member?
+Customer A's first order was both sushi and curry, customer B's first order was curry, and customer C's first order was two bowls of ramen.
 
-### 8. Which item was purchased just before the customer became a member?
+### 4. What is the most purchased item on the menu and how many times was it purchased by all customers?
+**Answer:**
+```sql
+SELECT
+    menu.product_name,
+    COUNT(sales.product_id) AS times_purchased
+FROM
+    sales
+JOIN
+    menu ON menu.product_id = sales.product_id
+GROUP BY
+    menu.product_name
+ORDER BY
+    times_purchased DESC
+;
+```
 
-### 9. What is the total items and amount spent for each member before they became a member?
+**Steps:**
+- Use **JOIN** to combine rows from the `menu` table onto `sales` based on `product_id` in order to obtain the name of the food for each order.
+- Use the aggregate function `COUNT()` to count the number of sales, then use the **GROUP BY** clause to group the result set by `product_name`.
+- Use the **ORDER BY** clause along with the keyword **DESC** to specify the sorting order. We will want the product with the highest number on sales at the very top.
 
-### 10. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+**Output:**
+| product_name | times_purchased |
+|-------------|-------------|
+| ramen | 8 |
+| curry | 4 |
+| sushi | 3 |
 
-### 11. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+Customers had ordered ramen 8 times, which makes it the most purchased item on the menu.
+
+### 5. Which item was the most popular for each customer?
+**Answer:**
+```sql
+WITH ranked_products AS (
+    SELECT
+        s.customer_id,
+        s.product_name,
+        RANK() OVER(PARTITION BY s.customer_id ORDER BY s.times_purchased) AS rnk
+    FROM (
+        SELECT
+            sales.customer_id,
+            menu.product_name,
+            COUNT(menu.product_name) AS times_purchased
+        FROM
+            sales
+        JOIN
+            menu ON menu.product_id = sales.product_id
+        GROUP BY
+            sales.customer_id,
+            menu.product_name
+        ORDER BY
+            sales.customer_id,
+            times_purchased DESC
+    ) AS s
+)
+SELECT
+    *
+FROM
+    ranked_products
+WHERE
+    rnk = 1;
+```
+
+**Steps:**
+- Within a common table expression, use the window function `RANK()` to order the menu items by the number of times purchased for each customer.
+    - The subquery in the **FROM** clause, which will use **GROUP BY** to group the CTE by `customer_id` and `product_name`, allows us to count how many of each item was purchased by each customer.
+- In the outer query, use the **WHERE** clause to filter the results to determine which menu item was most purchased for each customer.
+
+**Output:**
+| customer_id | product_name | rnk |
+|-------------|-------------|-------------|
+| A | sushi | 1 |
+| B | sushi | 1 |
+| B | curry | 1 |
+| B | ramen | 1 |
+| C | ramen | 1 |
+
+For customer A, sushi was their most popular item. For customer B, all three menu items were equally as popular. For customer C, ramen was their most popular item.
+
+### 6. Which item was purchased first by the customer after they became a member?
+
+### 7. Which item was purchased just before the customer became a member?
+
+### 8. What is the total items and amount spent for each member before they became a member?
+
+### 9. If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+
+### 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
