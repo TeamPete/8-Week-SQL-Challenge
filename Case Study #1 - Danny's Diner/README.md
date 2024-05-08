@@ -514,8 +514,8 @@ FROM (
 
 **Steps:**
 - In our subquery, we are creating a new field called `member` and populating them with 'Y' or 'N' based on whether the customer was a member at the time.
-    - In addition, we **JOIN** all tables.
-- In the main query, we use the window function `RANK()` each customer's orders only when `member` is not equal to 'N'. Otherwise, the ranking column will be `NULL`.
+    - In addition, we **JOIN** all tables. See the previous problem's solution for a more extensive explanation.
+- In the main query, we use the window function `RANK()` to rank each customer's orders only when `member` is not equal to 'N'. Otherwise, the ranking column will be `NULL`.
 
 **Output:**
 | customer_id | order_date | product_name | price | member | ranking |
