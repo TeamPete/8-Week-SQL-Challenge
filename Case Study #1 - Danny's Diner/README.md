@@ -434,7 +434,7 @@ GROUP BY
 | A | 1520 |
 | B | 1120 |
 
-### Bonus Section: Join All Things
+## Bonus Section: Join All Things
 **Answer:**
 ```sql
     SELECT
@@ -479,7 +479,7 @@ LEFT JOIN
 | C           | 2021-01-01 | ramen        | 12    | N      |
 | C           | 2021-01-07 | ramen        | 12    | N      |
 
-### Bonus Section: Rank All Things
+## Bonus Section: Rank All Things
 **Answer:**
 ```sql
 SELECT
