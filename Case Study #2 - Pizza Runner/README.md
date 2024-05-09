@@ -8,6 +8,7 @@ Since this particular case study is quite lengthy, I will provide a table of con
 - [Creating Our Database Schema](#creating-our-database-schema)
 - [Cleaning the Data](#cleaning-the-data)
 - [A. Pizza Metrics - Answers and Solutions](#a-pizza-metrics---answers-and-solutions)
+- [B. Runner and Customer Experience - Answers and Solutions](#b-runner-and-customer-experience---answers-and-solutions)
 
 <a name="problem-summary"></a>
 ## Problem Summary
@@ -300,6 +301,8 @@ FROM
 |-------------|
 | 10 |
 
+There were 10 unique customer orders.
+
 ### 3. How many successful orders were delivered by each runner?
 **Answer:**
 ```sql
@@ -324,6 +327,8 @@ GROUP BY
 | 1 | 4 |
 | 2 | 3 |
 | 3 | 1 |
+
+Runner 1 made 4 successful orders, runner 2 had 3 successful orders, and runner 3 had 1 successful order.
 
 ### 4. How many of each type of pizza was delivered?
 **Answer:**
@@ -366,6 +371,8 @@ GROUP BY
 |------------|------|
 | Meatlovers | 9 |
 | Vegetarian | 3 |
+
+Meatlovers was delivered 9 times, and vegetarian was delivered 3 times.
 
 ### 5. How many Vegetarian and Meatlovers were ordered by each customer?
 **Answer:**
@@ -433,6 +440,8 @@ FROM (
 | MAX(num_pizzas) |
 |------|
 | 3 |
+
+The most pizzas a successful delivery had was 3.
 
 ### 7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
 **Answer:**
@@ -518,6 +527,8 @@ ORDER BY
 | had_both_exclusions_and_extras |
 |-------------|
 | 1         |
+
+Only 1 pizza had both exclusions and extras.
 
 ### 9. What was the total volume of pizzas ordered for each hour of the day?
 **Answer:**
@@ -621,3 +632,99 @@ GROUP BY
 | Thursday  | 0          |
 | Friday    | 5          |
 | Saturday  | 3          |
+
+## B. Runner and Customer Experience - Answers and Solutions
+### 1. How many runners signed up for each 1 week period? (i.e. week starts `2021-01-01`)
+**Answer:**
+```sql
+SELECT
+  WEEK(DATE_ADD(registration_date, INTERVAL 2 DAY), 0) AS week_number,
+  COUNT(*) AS registrations
+FROM
+  runners
+GROUP BY
+  week_number;
+```
+
+**Steps:**
+**Output:**
+
+### 2. What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to pickup the order?
+**Answer:**
+```sql
+WITH order_to_pickup_times AS
+(
+  SELECT
+    runner_orders.runner_id, runner_orders.order_id,
+    AVG(TIMESTAMPDIFF(minute, customer_orders.order_time, runner_orders.pickup_time)) AS arrival_durations
+  FROM
+    runner_orders
+  JOIN
+    customer_orders
+    ON customer_orders.order_id = runner_orders.order_id
+  WHERE
+    cancellation IS NULL
+  GROUP BY
+    runner_orders.runner_id,
+    runner_orders.order_id
+)
+SELECT
+  runner_id,
+  ROUND(AVG(arrival_durations), 2) AS avg_order_to_pickup_minutes
+FROM
+  order_to_pickup_times
+GROUP BY
+  runner_id;
+```
+**Steps:**
+**Output:**
+
+### 3. Is there any relationship between the number of pizzas and how long the order takes to prepare?
+**Answer:**
+```sql
+WITH order_and_prep_time AS
+(
+  SELECT
+    customer_orders.order_id,
+    COUNT(pizza_id) AS number_of_pizzas,
+    AVG(TIMESTAMPDIFF(MINUTE, customer_orders.order_time, runner_orders.pickup_time)) AS prep_time
+  FROM
+    customer_orders
+  JOIN
+    runner_orders
+    ON customer_orders.order_id = runner_orders.order_id
+  WHERE
+    cancellation IS NULL
+  GROUP BY
+    customer_orders.order_id
+)
+SELECT
+  number_of_pizzas,
+  ROUND(AVG(prep_time), 2) AS avg_prep_time_minutes
+FROM
+  order_and_prep_time
+GROUP BY
+  number_of_pizzas;
+```
+**Steps:**
+**Output:**
+
+### 4. What was the average distance travelled for each customer?
+**Answer:**
+**Steps:**
+**Output:**
+
+### 5. What was the difference between the longest and shortest delivery times for all orders?
+**Answer:**
+**Steps:**
+**Output:**
+
+### 6. What was the average speed for each runner for each delivery and do you notice any trend for these values?
+**Answer:**
+**Steps:**
+**Output:**
+
+### 7. What is the successful delivery percentage for each runner?
+**Answer:**
+**Steps:**
+**Output:**
