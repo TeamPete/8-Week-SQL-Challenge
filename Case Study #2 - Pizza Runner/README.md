@@ -4,8 +4,10 @@
 ## Table of Contents
 Since this particular case study is quite lengthy, I will provide a table of contents to quickly navigate to different sections!
 
-- [Problem Summary](##problem-summary)
+- [Problem Summary](#problem-summary)
 - [Creating Our Database Schema](#creating-our-database-schema)
+- [Cleaning the Data](#cleaning-the-data)
+- [A. Pizza Metrics - Answers and Solutions](#a-pizza-metrics---answers-and-solutions)
 
 <a name="problem-summary"></a>
 ## Problem Summary
