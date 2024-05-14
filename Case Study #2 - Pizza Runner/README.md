@@ -9,6 +9,7 @@ Since this particular case study is quite lengthy, I will provide a table of con
 - [Cleaning the Data](#cleaning-the-data)
 - [A. Pizza Metrics - Answers and Solutions](#a-pizza-metrics---answers-and-solutions)
 - [B. Runner and Customer Experience - Answers and Solutions](#b-runner-and-customer-experience---answers-and-solutions)
+- [C. Ingredient Optimization - Answers ans Solutions](#c-ingredient-optimization---answers-and-solutions)
 
 <a name="problem-summary"></a>
 ## Problem Summary
@@ -647,7 +648,19 @@ GROUP BY
 ```
 
 **Steps:**
+- Use the `WEEK()` function to extract the week number of the `registration_date` field.
+- Because new year's day occurred on a Friday in 2021 and Sunday starts the week number count, the `WEEK()` function will return 0. We want week numbers to be aligned with each 7 day intervals since new year's day.
+  - To fix this, we will add two days the `registration_date` field by using the `DATE_ADD()` function. 
+- Group the results by week number and use the aggregate function `COUNT()` to count the number of registrations for each week number.
+
 **Output:**
+| week_number  | registrations |
+|-----------|------------|
+| 1    | 2          |
+| 2    | 1          |
+| 3   | 1          |
+
+During week one, 2 runners had signed up. In each of weeks two and three, 1 runner signed up.
 
 ### 2. What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to pickup the order?
 **Answer:**
@@ -676,8 +689,23 @@ FROM
 GROUP BY
   runner_id;
 ```
+
 **Steps:**
+- Create a common table expression that outputs time differences between `order_time` and `pickup_time`.
+    - In this query, use **JOIN** to combine rows from `runner_orders` with `customer_orders` based on `order_id`.
+    - Then, use the `TIMESTAMPDIFF()` function to calculate differences between `order_time` and `pickup_time` in minutes.
+    - Excluse rows where `cancellation` is `NULL` using the **WHERE** clause.
+    - Because there will be multiple rows for the same `runner_id` and `order_id`, we need to use **GROUP BY** to group the results by each runner and order. We need to use the aggregate function `AVG()` to average the time differences but it won't change anything.
+- In the main query, we use `AVG()` to take the average of the `order_time` to `pickup_time` durations for each `runner_id`.
+
 **Output:**
+| runner_id | avg_order_to_pickup_minutes |
+|-----------|-----------------------------|
+| 1         | 14.00                       |
+| 2         | 19.67                       |
+| 3         | 10.00                       |
+
+Runner 1 had an average order-to-pickup time of 14 minutes, runner 2 had an average order-to-pickup time of 19.67 minutes, and runner 3 had an average order-to-pickup time of 10 minutes.
 
 ### 3. Is there any relationship between the number of pizzas and how long the order takes to prepare?
 **Answer:**
@@ -707,24 +735,160 @@ GROUP BY
   number_of_pizzas;
 ```
 **Steps:**
+- Create a common table expression that outputs time differences between `order_time` and `pickup_time`.
+    - In this query, use **JOIN** to combine rows from `runner_orders` with `customer_orders` based on `order_id`.
+    - Then, use the `TIMESTAMPDIFF()` function to calculate differences between `order_time` and `pickup_time` in minutes.
+    - Excluse rows where `cancellation` is `NULL` using the **WHERE** clause.
+    - Because there will be multiple rows for the same `order_id`, we need to use **GROUP BY** to group the results by each order id. We need to use the aggregate function `AVG()` to average the time differences but it won't change anything.
+    - Lastly, use `COUNT()` to count the number of pizzas for each order.
+- In the main query, group the results by number of pizzas and average the prep times.
+
 **Output:**
+| number_of_pizzas | avg_prep_time_minutes |
+|------------------|-----------------------|
+| 1                | 12.00                 |
+| 2                | 18.00                 |
+| 3                | 29.00                 |
+
+This relationship suggests that preparing more pizzas requires additional time, likely due to the increased workload involved in making multiple pizzas.
 
 ### 4. What was the average distance travelled for each customer?
 **Answer:**
+```sql
+WITH order_customer_pair AS (
+  SELECT
+    order_id,
+    ROUND(AVG(customer_id), 0) AS customer_id
+  FROM
+    customer_orders
+  GROUP BY
+    order_id
+)
+
+SELECT
+  order_customer_pair.customer_id,
+  ROUND(AVG(distance_km), 2) AS avg_distance_traveled_km
+FROM
+  runner_orders
+LEFT JOIN
+  order_customer_pair ON order_customer_pair.order_id = runner_orders.order_id
+WHERE
+  cancellation IS NULL
+GROUP BY
+  order_customer_pair.customer_id;
+```
+
 **Steps:**
+- Within a common table expression, write a query that outputs all the `order_id` and `customer_id` pairs.
+- In the main query, use **JOIN** to combine rows from the newly created CTE with `runner_rders` based on `order_id`.
+  - Excluse rows where `cancellation` is `NULL` using the **WHERE** clause.
+  - Group the results by `customer_id` and use `AVG()` to take the average of `distance_km` for each customer.
+
 **Output:**
+| customer_id | avg_distance_traveled_km |
+|-------------|--------------------------|
+| 101         | 20.00                    |
+| 102         | 18.40                    |
+| 103         | 23.40                    |
+| 104         | 10.00                    |
+| 105         | 25.00                    |
 
 ### 5. What was the difference between the longest and shortest delivery times for all orders?
 **Answer:**
+```sql
+SELECT
+  MAX(duration_min)-MIN(duration_min)
+FROM
+  runner_orders
+WHERE
+  cancellation IS NULL;
+```
+
 **Steps:**
+- Use the `MAX()` and `MIN()` functions to calculate the difference between the longest and shortest `duration_min`.
+- Excluse rows where `cancellation` is `NULL` using the **WHERE** clause.
+
 **Output:**
+| MAX(duration_min)-MIN(duration_min) |
+|-------------|
+| 30 |
+
+The difference between the longest and shortest delivery times was 30 minutes.
 
 ### 6. What was the average speed for each runner for each delivery and do you notice any trend for these values?
 **Answer:**
+```sql
+SELECT
+  runner_id,
+  order_id,
+  ROUND(AVG((distance_km/duration_min)*60), 2) AS avg_km_per_hr,
+  AVG(ROUND(AVG((distance_km/duration_min)*60), 2)) OVER(PARTITION BY runner_id) AS runner_avg_speed_km_per_hr
+FROM
+  runner_orders
+WHERE
+  cancellation IS NULL
+GROUP BY
+  runner_id,
+  order_id
+ORDER BY
+  runner_id,
+  order_id;
+```
+
 **Steps:**
+- Use the `AVG()` function to calculate the average of each `distance_km`/`duration_min` as this will calculate km per hour.
+    - Then use a window function to calculate the average of the average speeds for each runner.
+- Excluse rows where `cancellation` is `NULL` using the **WHERE** clause.
+- Group the results by `runner_id` and `order_id` using the **GROUP BY** clause.
+- Sort the results by `runner_id` and `order_id` using the **ORDER BY** clause.
+
 **Output:**
+| runner_id | order_id | avg_km_per_hr | runner_avg_speed_km_per_hr |
+|-----------|----------|---------------|----------------------------|
+| 1         | 1        | 37.50         | 45.535000                  |
+| 1         | 2        | 44.44         | 45.535000                  |
+| 1         | 3        | 40.20         | 45.535000                  |
+| 1         | 10       | 60.00         | 45.535000                  |
+| 2         | 4        | 35.10         | 62.900000                  |
+| 2         | 7        | 60.00         | 62.900000                  |
+| 2         | 8        | 93.60         | 62.900000                  |
+| 3         | 5        | 40.00         | 40.000000                  |
+
+There seems to be an increased average speed as the number of deliveries increases for each runner.
 
 ### 7. What is the successful delivery percentage for each runner?
 **Answer:**
+```sql
+SELECT
+  runner_id,
+  ROUND(
+    SUM(
+      CASE
+        WHEN cancellation IS NULL THEN 1
+        ELSE 0
+      END
+    ) / COUNT(order_id), 2
+  ) * 100 AS success_percentage
+FROM
+  runner_orders
+GROUP BY
+  runner_id
+ORDER BY
+  runner_id;
+```
+
 **Steps:**
+- Use the `CASE` expression to create a new field that tells us whether the delivery was cancelled or not.
+  - Use `SUM()` to total the cases and divide it by the number of orders using the aggregate function `COUNT()`.
+ - Group the results by `runner_id`.
+
 **Output:**
+| runner_id | success_percentage |
+|-----------|--------------------|
+| 1         | 100.00             |
+| 2         | 75.00              |
+| 3         | 50.00              |
+
+Runner 1 had a 100% successful delivery rate, runner 2 had a 75% successful delivery rate, and runner 3 had a 50% successful delivery rate.
+
+## C. Ingredient Optimization - Answers and Solutions
