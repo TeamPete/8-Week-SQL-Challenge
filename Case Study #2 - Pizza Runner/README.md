@@ -9,7 +9,7 @@ Since this particular case study is quite lengthy, I will provide a table of con
 - [Cleaning the Data](#cleaning-the-data)
 - [A. Pizza Metrics - Answers and Solutions](#a-pizza-metrics---answers-and-solutions)
 - [B. Runner and Customer Experience - Answers and Solutions](#b-runner-and-customer-experience---answers-and-solutions)
-- [C. Ingredient Optimization - Answers ans Solutions](#c-ingredient-optimization---answers-and-solutions)
+- [C. Ingredient Optimization - Answers and Solutions](#c-ingredient-optimization---answers-and-solutions)
 
 <a name="problem-summary"></a>
 ## Problem Summary
